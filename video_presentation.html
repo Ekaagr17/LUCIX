@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LUCIX — Forensic Intelligence Video Showcase</title>
+
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap"/>
+
+  <style>
+    :root {
+      --bg-void: #050608;
+      --bg-deep: #081321;
+      --bg-card: rgba(8, 19, 33, 0.55);
+      --glass-border: rgba(0, 229, 255, 0.12);
+      --glass-border-bright: rgba(0, 229, 255, 0.28);
+      --cyan: #00E5FF;
+      --cyan-dim: rgba(0, 229, 255, 0.6);
+      --azure: #3A86FF;
+      --azure-dim: rgba(58, 134, 255, 0.5);
+      --teal: #00FFC6;
+      --teal-dim: rgba(0, 255, 198, 0.45);
+      --red: #FF5A5F;
+      --red-dim: rgba(255, 90, 95, 0.4);
+      --success: #DDFBFF;
+      --text-1: #E8F4F8;
+      --text-2: #8BA4B8;
+      --text-3: #4A6478;
+      --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Cascadia Code', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-void);
+      color: var(--text-1);
+      font-family: var(--font-ui);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      overflow-x: hidden;
+      background-image:
+        radial-gradient(ellipse 70% 50% at 20% 30%, rgba(0, 229, 255, 0.04) 0%, transparent 100%),
+        radial-gradient(ellipse 60% 60% at 80% 70%, rgba(58, 134, 255, 0.03) 0%, transparent 100%),
+        radial-gradient(ellipse 40% 30% at 50% 90%, rgba(0, 255, 198, 0.02) 0%, transparent 100%);
+    }
+
+    .video-theater {
+      width: 100%;
+      max-width: 1280px;
+      background: rgba(5, 6, 8, 0.95);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow:
+        0 0 80px rgba(0, 229, 255, 0.06),
+        0 40px 80px rgba(0, 0, 0, 0.8),
+        inset 0 1px 0 rgba(0, 229, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      backdrop-filter: blur(40px);
+    }
+
+    .video-hud-header {
+      background: rgba(8, 19, 33, 0.75);
+      backdrop-filter: blur(24px);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(0, 229, 255, 0.08);
+      font-size: 12px;
+    }
+    .hud-title {
+      font-weight: 600;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: var(--text-2);
+      font-size: 11px;
+    }
+    .hud-title-icon {
+      width: 8px; height: 8px;
+      background: var(--cyan);
+      clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+      box-shadow: 0 0 12px var(--cyan);
+    }
+    .hud-badge {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      padding: 3px 10px;
+      border-radius: 999px;
+      background: rgba(0, 229, 255, 0.08);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 229, 255, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      text-transform: uppercase;
+    }
+    .hud-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan); animation: pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    .hud-scene-name {
+      color: var(--cyan);
+      font-weight: 500;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      opacity: 0.8;
+    }
+    .hud-timecode {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--teal);
+      background: rgba(0, 255, 198, 0.06);
+      padding: 4px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(0, 255, 198, 0.15);
+      letter-spacing: 0.06em;
+    }
+
+    .video-viewport {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: var(--bg-void);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #videoCanvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: contain;
+    }
+
+    .subtitles-banner {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(5, 6, 8, 0.85);
+      backdrop-filter: blur(24px) saturate(1.4);
+      border: 1px solid rgba(0, 229, 255, 0.15);
+      padding: 12px 28px;
+      border-radius: 16px;
+      max-width: 82%;
+      text-align: center;
+      z-index: 10;
+      pointer-events: none;
+      box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.7),
+        0 0 20px rgba(0, 229, 255, 0.04),
+        inset 0 1px 0 rgba(0, 229, 255, 0.06);
+    }
+    .sub-speaker {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      opacity: 0.75;
+    }
+    .sub-text {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--text-1);
+      font-weight: 400;
+    }
+
+    .video-controls-bar {
+      background: rgba(8, 19, 33, 0.65);
+      backdrop-filter: blur(20px);
+      border-top: 1px solid rgba(0, 229, 255, 0.08);
+      padding: 14px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .video-progress-container {
+      width: 100%;
+      height: 4px;
+      background: rgba(0, 229, 255, 0.08);
+      border-radius: 2px;
+      position: relative;
+      cursor: pointer;
+      transition: height 0.2s;
+    }
+    .video-progress-container:hover {
+      height: 6px;
+    }
+    .video-progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--cyan) 0%, var(--azure) 60%, var(--teal) 100%);
+      border-radius: 2px;
+      width: 0%;
+      position: relative;
+      box-shadow: 0 0 14px rgba(0, 229, 255, 0.35);
+      transition: box-shadow 0.3s;
+    }
+    .video-progress-handle {
+      position: absolute;
+      right: -5px; top: -5px;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 12px var(--cyan), 0 0 4px rgba(0, 0, 0, 0.8);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .video-progress-container:hover .video-progress-handle {
+      opacity: 1;
+    }
+
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .ctrl-group-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .v-btn {
+      background: rgba(0, 229, 255, 0.04);
+      border: 1px solid rgba(0, 229, 255, 0.12);
+      color: var(--text-2);
+      padding: 7px 16px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-ui);
+      transition: all 0.2s ease;
+      letter-spacing: 0.04em;
+    }
+    .v-btn:hover {
+      background: rgba(0, 229, 255, 0.1);
+      border-color: rgba(0, 229, 255, 0.25);
+      color: var(--text-1);
+      box-shadow: 0 0 16px rgba(0, 229, 255, 0.08);
+    }
+    .v-btn.btn-play {
+      background: rgba(0, 229, 255, 0.12);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      color: var(--cyan);
+      box-shadow: 0 4px 20px rgba(0, 229, 255, 0.12);
+    }
+    .v-btn.btn-play:hover {
+      background: rgba(0, 229, 255, 0.2);
+      box-shadow: 0 4px 24px rgba(0, 229, 255, 0.2);
+      transform: translateY(-1px);
+    }
+    .v-btn.btn-record {
+      background: rgba(255, 90, 95, 0.06);
+      border: 1px solid rgba(255, 90, 95, 0.2);
+      color: var(--red);
+    }
+    .v-btn.recording {
+      background: rgba(255, 90, 95, 0.2);
+      border-color: rgba(255, 90, 95, 0.5);
+      color: #fff;
+      animation: recordPulse 1.6s ease-in-out infinite;
+    }
+    @keyframes recordPulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 90, 95, 0.3); }
+      50% { box-shadow: 0 0 0 6px rgba(255, 90, 95, 0); }
+    }
+
+    .scene-jump-pills {
+      display: flex;
+      gap: 3px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 3px;
+      border-radius: 12px;
+      border: 1px solid rgba(0, 229, 255, 0.06);
+    }
+    .scene-pill {
+      background: none;
+      border: none;
+      color: var(--text-3);
+      font-size: 9px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 9px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      transition: all 0.2s;
+      letter-spacing: 0.04em;
+    }
+    .scene-pill:hover { color: var(--text-2); }
+    .scene-pill.active {
+      background: rgba(0, 229, 255, 0.1);
+      color: var(--cyan);
+      box-shadow: 0 0 12px rgba(0, 229, 255, 0.1);
+    }
+
+    .back-nav {
+      margin-top: 16px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      font-size: 12px;
+    }
+    .back-nav a {
+      color: var(--cyan);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      letter-spacing: 0.04em;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .back-nav a:hover { opacity: 1; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <div class="video-theater">
+    <div class="video-hud-header">
+      <div class="hud-title">
+        <div class="hud-title-icon"></div>
+        <span>LUCIX AUTONOMOUS INTELLIGENCE</span>
+        <div class="hud-badge"><div class="hud-dot"></div> NEURAL NARRATION ACTIVE</div>
+      </div>
+      <div class="hud-scene-name" id="sceneNameDisplay">ACT 1 : THE GEOLOCATION ILLUSION</div>
+      <div class="hud-timecode" id="timecodeDisplay">00:00 / 03:00</div>
+    </div>
+
+    <div class="video-viewport" id="viewport">
+      <canvas id="videoCanvas" width="1280" height="720"></canvas>
+
+      <div class="subtitles-banner" id="subtitlesBanner">
+        <div class="sub-speaker" id="subSpeaker">◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE</div>
+        <div class="sub-text" id="subText">Initializing autonomous cyber threat briefing…</div>
+      </div>
+    </div>
+
+    <div class="video-controls-bar">
+      <div class="video-progress-container" id="progressBarContainer">
+        <div class="video-progress-bar" id="progressBar">
+          <div class="video-progress-handle"></div>
+        </div>
+      </div>
+
+      <div class="controls-row">
+        <div class="ctrl-group-left">
+          <button class="v-btn btn-play" id="playBtn" onclick="togglePlay()">▶ Play Forensic Briefing</button>
+          <button class="v-btn" onclick="restartVideo()">⏮ Restart</button>
+          <button class="v-btn" onclick="toggleMute()" id="muteBtn">◉ Voice: ON</button>
+          <button class="v-btn btn-record" id="recordBtn" onclick="toggleRecording()">● Record & Save</button>
+        </div>
+
+        <div class="scene-jump-pills">
+          <button class="scene-pill active" onclick="jumpToTime(0)">01 Illusion</button>
+          <button class="scene-pill" onclick="jumpToTime(25)">02 Pipeline</button>
+          <button class="scene-pill" onclick="jumpToTime(55)">03 GEOINT</button>
+          <button class="scene-pill" onclick="jumpToTime(90)">04 Simulator</button>
+          <button class="scene-pill" onclick="jumpToTime(125)">05 Graph</button>
+          <button class="scene-pill" onclick="jumpToTime(155)">06 Intelligence</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="back-nav">
+    <a href="index.html">← Return to LUCIX Dashboard</a>
+    <span style="color:var(--text-3)">·</span>
+    <span style="color:var(--text-3); font-weight:400; letter-spacing:0.06em; font-size:11px">Narrated by <strong style="color:var(--cyan)">LUCA</strong> · Logical Unified Cyber Attribution</span>
+  </div>
+
+  <script>
+    'use strict';
+
+    // ═══════════════════════════════════════════════════════════════
+    // COLOR SYSTEM — Premium LUCIX Design Language
+    // ═══════════════════════════════════════════════════════════════
+    const C = {
+      void:     '#050608',
+      deep:     '#081321',
+      cyan:     '#00E5FF',
+      azure:    '#3A86FF',
+      teal:     '#00FFC6',
+      red:      '#FF5A5F',
+      success:  '#DDFBFF',
+      white:    '#E8F4F8',
+      muted:    '#8BA4B8',
+      dim:      '#4A6478',
+      dark:     '#1A2A3A',
+
+      cyanA:    (a) => `rgba(0, 229, 255, ${a})`,
+      azureA:   (a) => `rgba(58, 134, 255, ${a})`,
+      tealA:    (a) => `rgba(0, 255, 198, ${a})`,
+      redA:     (a) => `rgba(255, 90, 95, ${a})`,
+      whiteA:   (a) => `rgba(232, 244, 248, ${a})`,
+    };
+
+    // ═══════════════════════════════════════════════════════════════
+    // PARTICLE SYSTEM
+    // ═══════════════════════════════════════════════════════════════
+    const PARTICLES = [];
+    const MAX_PARTICLES = 80;
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+      PARTICLES.push({
+        x: Math.random() * 1280,
+        y: Math.random() * 720,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.2 - 0.1,
+        size: Math.random() * 1.5 + 0.3,
+        opacity: Math.random() * 0.3 + 0.05,
+        pulse: Math.random() * Math.PI * 2,
+      });
+    }
+
+    function updateAndDrawParticles(ctx, w, h, time) {
+      PARTICLES.forEach(p => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.pulse += 0.02;
+        if (p.x < 0) p.x = w;
+        if (p.x > w) p.x = 0;
+        if (p.y < 0) p.y = h;
+        if (p.y > h) p.y = 0;
+
+        const a = p.opacity * (0.5 + 0.5 * Math.sin(p.pulse));
+        ctx.fillStyle = C.cyanA(a);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // HUD MICRO-DETAIL HELPERS
+    // ═══════════════════════════════════════════════════════════════
+    function drawCornerBrackets(ctx, x, y, w, h, size, color, lineW) {
+      ctx.strokeStyle = color || C.cyanA(0.3);
+      ctx.lineWidth = lineW || 1;
+      const s = size || 14;
+      // Top-left
+      ctx.beginPath(); ctx.moveTo(x, y + s); ctx.lineTo(x, y); ctx.lineTo(x + s, y); ctx.stroke();
+      // Top-right
+      ctx.beginPath(); ctx.moveTo(x + w - s, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + s); ctx.stroke();
+      // Bottom-left
+      ctx.beginPath(); ctx.moveTo(x, y + h - s); ctx.lineTo(x, y + h); ctx.lineTo(x + s, y + h); ctx.stroke();
+      // Bottom-right
+      ctx.beginPath(); ctx.moveTo(x + w - s, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - s); ctx.stroke();
+    }
+
+    function drawScanLine(ctx, w, h, time) {
+      const scanY = (time * 30) % h;
+      const grad = ctx.createLinearGradient(0, scanY - 20, 0, scanY + 20);
+      grad.addColorStop(0, 'transparent');
+      grad.addColorStop(0.5, C.cyanA(0.03));
+      grad.addColorStop(1, 'transparent');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, scanY - 20, w, 40);
+    }
+
+    function drawHexStrings(ctx, w, h, time) {
+      ctx.fillStyle = C.cyanA(0.04);
+      ctx.font = '300 9px "JetBrains Mono"';
+      ctx.textAlign = 'left';
+      const hex = '0123456789ABCDEF';
+      const seed = Math.floor(time * 2);
+      for (let i = 0; i < 4; i++) {
+        let str = '';
+        for (let j = 0; j < 16; j++) str += hex[(seed + i * 7 + j * 3) % 16];
+        ctx.fillText(str, 18, 28 + i * 14);
+      }
+      ctx.textAlign = 'right';
+      for (let i = 0; i < 4; i++) {
+        let str = '';
+        for (let j = 0; j < 16; j++) str += hex[(seed + i * 11 + j * 5) % 16];
+        ctx.fillText(str, w - 18, h - 55 + i * 14);
+      }
+    }
+
+    function drawCalibrationMarks(ctx, w, h) {
+      ctx.strokeStyle = C.cyanA(0.06);
+      ctx.lineWidth = 0.5;
+      // Center crosshair
+      const cx = w / 2, cy = h / 2;
+      ctx.beginPath(); ctx.moveTo(cx - 20, cy); ctx.lineTo(cx + 20, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy - 20); ctx.lineTo(cx, cy + 20); ctx.stroke();
+      // Edge tick marks
+      for (let i = 0; i < w; i += 80) {
+        ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 4); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(i, h); ctx.lineTo(i, h - 4); ctx.stroke();
+      }
+      for (let i = 0; i < h; i += 80) {
+        ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(4, i); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(w, i); ctx.lineTo(w - 4, i); ctx.stroke();
+      }
+    }
+
+    function drawTargetingRing(ctx, x, y, radius, time, color) {
+      const col = color || C.cyanA(0.2);
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 1;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(time * 0.5);
+      // Outer ring with gaps
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, i * Math.PI/2 + 0.1, i * Math.PI/2 + 1.2);
+        ctx.stroke();
+      }
+      ctx.rotate(-time * 0.8);
+      ctx.strokeStyle = color ? color.replace(/[\d.]+\)$/, '0.12)') : C.cyanA(0.1);
+      for (let i = 0; i < 6; i++) {
+        ctx.beginPath();
+        ctx.arc(0, 0, radius * 1.3, i * Math.PI/3 + 0.05, i * Math.PI/3 + 0.6);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // GLASSMORPHIC PANEL DRAWING
+    // ═══════════════════════════════════════════════════════════════
+    function glassPanel(ctx, x, y, w, h, opts = {}) {
+      const r = opts.radius || 18;
+      const fill = opts.fill || C.whiteA(0.03);
+      const stroke = opts.stroke || C.cyanA(0.12);
+      const glowColor = opts.glow || null;
+
+      ctx.save();
+      if (glowColor) {
+        ctx.shadowColor = glowColor;
+        ctx.shadowBlur = 20;
+      }
+      ctx.fillStyle = fill;
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = opts.lineWidth || 1;
+      roundRect(ctx, x, y, w, h, r, true, true);
+      ctx.restore();
+
+      if (opts.brackets !== false) {
+        drawCornerBrackets(ctx, x, y, w, h, opts.bracketSize || 12, opts.bracketColor || C.cyanA(0.2));
+      }
+    }
+
+    function drawSceneLabel(ctx, w, label, subtitle, y1, y2) {
+      ctx.textAlign = 'center';
+      ctx.fillStyle = C.cyan;
+      ctx.font = '500 11px "JetBrains Mono"';
+      ctx.letterSpacing = '0.16em';
+      ctx.fillText(label.toUpperCase(), w/2, y1 || 60);
+
+      ctx.fillStyle = C.white;
+      ctx.font = '700 30px "Inter"';
+      ctx.fillText(subtitle, w/2, y2 || 98);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // TIMING / STATE
+    // ═══════════════════════════════════════════════════════════════
+    const TOTAL_DURATION = 180;
+    let currentTime = 0;
+    let isPlaying = false;
+    let isMuted = false;
+    let animFrameId = null;
+    let lastTimestamp = 0;
+    let mediaRecorder = null;
+    let recordedChunks = [];
+    let isRecording = false;
+    let audioContext = null;
+
+    // FORENSIC VOICE SCRIPT
+    const SCRIPT = [
+      // ACT 1: THE GEOLOCATION ILLUSION (0 - 25s)
+      {
+        start: 0, end: 12,
+        scene: 'ACT 1 : THE GEOLOCATION ILLUSION',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "Every day in security operations centers worldwide, analysts make a catastrophic mistake. They look at an IP address on a world map and assume they are looking at the attacker's physical location."
+      },
+      {
+        start: 12, end: 25,
+        scene: 'ACT 1 : THE GEOLOCATION ILLUSION',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "They are not. They are looking at a decoy. Between bulletproof cloud servers, VPN tunnels, and Tor exit relays, traditional geolocation is a dangerous illusion. Welcome to LUCIX."
+      },
+
+      // ACT 2: THE 5-LAYER FORENSIC PIPELINE (25 - 55s)
+      {
+        start: 25, end: 40,
+        scene: 'ACT 2 : THE FORENSIC PIPELINE',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "I am LUCA, the intelligence core inside LUCIX. To eliminate guesswork, our system deploys a rigorous five-layer forensic pipeline. First, mathematical SHA-256 cryptographic hash chaining locks every packet into an immutable digital audit trail."
+      },
+      {
+        start: 40, end: 55,
+        scene: 'ACT 2 : THE FORENSIC PIPELINE',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "Next, our autonomous classifier interrogates ASNs and reverse DNS, while our geometric consensus engine correlates multiple independent GeoIP databases. We enforce a hard law: Infrastructure location is never physical operator location."
+      },
+
+      // ACT 3: GEOINT & THE 9,360 KM TOR JUMP (55 - 90s)
+      {
+        start: 55, end: 72,
+        scene: 'ACT 3 : GEOINT & TOR ANALYSIS',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "Let me show you our Geographic Attribution view. At zero-nine-twelve UTC, IP 185.220.101.34 hit our perimeter. All three geolocation providers agree: Frankfurt, Germany. But because I detected a Tor exit relay, attribution confidence is immediately capped at LOW."
+      },
+      {
+        start: 72, end: 90,
+        scene: 'ACT 3 : GEOINT & TOR ANALYSIS',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "Fifty-two minutes later, that same IP reappeared in Singapore—a distance of 9,360 kilometers. Humanly impossible. A naive system cries spoofing. LUCIX's velocity engine correctly diagnoses Tor circuit rotation, preserving investigative accuracy."
+      },
+
+      // ACT 4: REAL-TIME ATTACK SIMULATION STUDIO (90 - 125s)
+      {
+        start: 90, end: 108,
+        scene: 'ACT 4 : ATTACK SIMULATION',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "Static logs are dead. This is our Cyber Operations Simulation Studio. Watch as I reconstruct incident INC-2026-0918-001 in compressed real-time. Notice the MITRE kill-chain progression: Reconnaissance, Initial Access, and Execution."
+      },
+      {
+        start: 108, end: 125,
+        scene: 'ACT 4 : ATTACK SIMULATION',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "As the threat gauge surges to critical, floating glassmorphic alerts trigger across every view with tactical radar pings. Adversary nodes dynamically transform from passive scanners into active exfiltration sinks."
+      },
+
+      // ACT 5: DIRECTED ATTACK GRAPH & CRYPTOGRAPHIC CUSTODY (125 - 155s)
+      {
+        start: 125, end: 140,
+        scene: 'ACT 5 : KILL CHAIN & CUSTODY',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "Here in the Attack Graph, directed SVG vectors illuminate adversary movement. Watch PowerShell spawn abnormally under explorer.exe, followed by lateral pivoting across SMB port 445 directly into Server-02."
+      },
+      {
+        start: 140, end: 155,
+        scene: 'ACT 5 : KILL CHAIN & CUSTODY',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "Every action is linked to our cryptographic evidence chain. If an attacker attempts to alter a single byte in the telemetry, the hash chain breaks instantly, flagging irreversible tamper detection."
+      },
+
+      // ACT 6: AUTONOMOUS FORENSIC INTELLIGENCE (155 - 180s)
+      {
+        start: 155, end: 167,
+        scene: 'ACT 6 : AUTONOMOUS INTELLIGENCE',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "I operate entirely offline. No external APIs. No latency. Zero cloud dependencies. Analysts can interrogate me via voice or text, receiving mathematically grounded attribution intelligence in milliseconds."
+      },
+      {
+        start: 167, end: 180,
+        scene: 'ACT 6 : AUTONOMOUS INTELLIGENCE',
+        speaker: '◈ LUCA · AUTONOMOUS FORENSIC INTELLIGENCE',
+        text: "LUCIX bridges cryptographic truth, spatial consensus, and real-time simulation. The era of guesswork in cyber forensics is over. Welcome to the future of incident attribution."
+      }
+    ];
+
+    const canvas = document.getElementById('videoCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function playBeep(freq = 800, dur = 0.1) {
+      if (isMuted) return;
+      try {
+        if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioContext.state === 'suspended') audioContext.resume();
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.04, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + dur);
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+        osc.start();
+        osc.stop(audioContext.currentTime + dur);
+      } catch (_) {}
+    }
+
+    let currentSpeechSegment = null;
+    function triggerVoiceForTime(sec) {
+      if (isMuted || !window.speechSynthesis) return;
+      const seg = SCRIPT.find(s => sec >= s.start && sec < s.end);
+      if (seg && seg !== currentSpeechSegment) {
+        currentSpeechSegment = seg;
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(seg.text);
+        utter.rate = 1.08;
+        utter.pitch = 1.05;
+        const voices = window.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(v =>
+          v.name.includes('Google UK') || v.name.includes('Samantha') ||
+          v.name.includes('Microsoft Aria') || v.name.includes('Zira') ||
+          v.name.includes('Natural')
+        ) || voices[0];
+        if (preferredVoice) utter.voice = preferredVoice;
+        window.speechSynthesis.speak(utter);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // MAIN RENDER LOOP
+    // ═══════════════════════════════════════════════════════════════
+    function renderFrame(time) {
+      const w = canvas.width;
+      const h = canvas.height;
+
+      // Pure black base
+      ctx.fillStyle = C.void;
+      ctx.fillRect(0, 0, w, h);
+
+      // Subtle deep gradient
+      const bgGrad = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, 500);
+      bgGrad.addColorStop(0, 'rgba(8, 19, 33, 0.4)');
+      bgGrad.addColorStop(1, 'transparent');
+      ctx.fillStyle = bgGrad;
+      ctx.fillRect(0, 0, w, h);
+
+      // Ultra-subtle grid
+      ctx.strokeStyle = C.cyanA(0.025);
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x < w; x += 60) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y < h; y += 60) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      // Floating particles
+      updateAndDrawParticles(ctx, w, h, time);
+
+      // Scan line
+      drawScanLine(ctx, w, h, time);
+
+      // Calibration marks
+      drawCalibrationMarks(ctx, w, h);
+
+      // Hex decorative strings
+      drawHexStrings(ctx, w, h, time);
+
+      // Scene content
+      if (time < 25) {
+        drawScene1(time, w, h);
+      } else if (time < 55) {
+        drawScene2(time - 25, w, h);
+      } else if (time < 90) {
+        drawScene3(time - 55, w, h);
+      } else if (time < 125) {
+        drawScene4(time - 90, w, h);
+      } else if (time < 155) {
+        drawScene5(time - 125, w, h);
+      } else {
+        drawScene6(time - 155, w, h);
+      }
+
+      // Vignette overlay
+      const vignette = ctx.createRadialGradient(w/2, h/2, h*0.3, w/2, h/2, h*0.85);
+      vignette.addColorStop(0, 'transparent');
+      vignette.addColorStop(1, 'rgba(5, 6, 8, 0.5)');
+      ctx.fillStyle = vignette;
+      ctx.fillRect(0, 0, w, h);
+
+      updateSubtitlesAndHUD(time);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SCENE 1: THE GEOLOCATION ILLUSION
+    // ═══════════════════════════════════════════════════════════════
+    function drawScene1(t, w, h) {
+      // Central glow
+      const glow = ctx.createRadialGradient(w/2, 200, 10, w/2, 200, 350);
+      glow.addColorStop(0, C.cyanA(0.12));
+      glow.addColorStop(0.5, C.azureA(0.04));
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, w, h);
+
+      // Targeting ring behind title
+      drawTargetingRing(ctx, w/2, 180, 100, t, C.cyanA(0.08));
+
+      ctx.textAlign = 'center';
+
+      // Scene label
+      ctx.fillStyle = C.cyanA(0.6);
+      ctx.font = '500 12px "JetBrains Mono"';
+      ctx.fillText('◈  AUTONOMOUS CYBER THREAT INTELLIGENCE', w/2, 120);
+
+      // Title
+      ctx.fillStyle = C.white;
+      ctx.font = '800 40px "Inter"';
+      ctx.fillText('The Geolocation Illusion', w/2, 175);
+
+      // Subtitle
+      ctx.fillStyle = C.muted;
+      ctx.font = '400 16px "Inter"';
+      ctx.fillText('Why IP Geolocation Fails During Advanced Persistent Threats', w/2, 212);
+
+      // Decoy flow diagram
+      const y = 280;
+      drawFlowBox(ctx, w/2 - 400, y, 210, 90, 'OBSERVED TELEMETRY', '185.220.101.34', C.cyan);
+      drawFlowArrow(ctx, w/2 - 175, y + 45, w/2 - 95, y + 45, 'ROUTED VIA', C.azure);
+      drawFlowBox(ctx, w/2 - 85, y, 210, 90, 'INFRASTRUCTURE DECOY', 'Tor Exit / Cloud VPS', C.teal);
+      drawFlowArrow(ctx, w/2 + 140, y + 45, w/2 + 220, y + 45, '≠ SEPARATED', C.red);
+      drawFlowBox(ctx, w/2 + 230, y, 210, 90, 'PHYSICAL OPERATOR', 'UNKNOWN ORIGIN', C.red);
+
+      // Tactical alert banner
+      glassPanel(ctx, w/2 - 370, 440, 740, 55, {
+        radius: 12,
+        fill: C.redA(0.06),
+        stroke: C.redA(0.2),
+        brackets: true,
+        bracketColor: C.redA(0.3),
+        bracketSize: 10
+      });
+      ctx.fillStyle = C.red;
+      ctx.font = '600 12px "JetBrains Mono"';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚠  TACTICAL REALITY : Attributing an IP to a human location creates costly investigative dead-ends', w/2, 473);
+
+      // Bottom status bar
+      ctx.fillStyle = C.cyanA(0.04);
+      roundRect(ctx, 60, h - 70, w - 120, 36, 8, true, false);
+      ctx.fillStyle = C.dim;
+      ctx.font = '400 10px "JetBrains Mono"';
+      ctx.textAlign = 'left';
+      ctx.fillText(`LUCIX v2.1.0  ·  SESSION ${Math.floor(t * 100)}  ·  CLASSIFICATION: UNCLASSIFIED // FOUO`, 80, h - 47);
+      ctx.textAlign = 'right';
+      ctx.fillText(`FRAME ${Math.floor(t * 30)}  ·  1280×720  ·  DELTA ${(t % 1).toFixed(3)}s`, w - 80, h - 47);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SCENE 2: THE 5-LAYER FORENSIC PIPELINE
+    // ═══════════════════════════════════════════════════════════════
+    function drawScene2(t, w, h) {
+      drawSceneLabel(ctx, w, 'COGNITIVE FORENSIC ARCHITECTURE', 'The 5-Layer Verification Pipeline', 55, 92);
+
+      const stages = [
+        { title: '01 INGEST',      sub: 'Raw Telemetry & Packets',     col: C.cyan },
+        { title: '02 CRYPTO',      sub: 'SHA-256 Hash Chaining',       col: C.teal },
+        { title: '03 CLASSIFY',    sub: 'ASN & Reverse DNS',           col: C.azure },
+        { title: '04 CONSENSUS',   sub: 'Multi-Vendor Spatial Score',  col: C.teal },
+        { title: '05 ANTI-SPOOF',  sub: 'Velocity Jump Detection',     col: C.red }
+      ];
+
+      const startX = 55;
+      const boxW = 200;
+      const gap = 38;
+      const boxH = 155;
+      const y = 135;
+
+      stages.forEach((st, i) => {
+        const x = startX + i * (boxW + gap);
+        const isActive = (t * 2) >= i;
+        const progress = Math.min(1, Math.max(0, t * 2 - i));
+
+        glassPanel(ctx, x, y, boxW, boxH, {
+          radius: 14,
+          fill: isActive ? C.whiteA(0.04) : C.whiteA(0.015),
+          stroke: isActive ? st.col + '40' : C.whiteA(0.04),
+          brackets: isActive,
+          bracketColor: st.col + '30',
+          bracketSize: 10,
+          glow: isActive ? st.col + '10' : null
+        });
+
+        // Stage number ring
+        if (isActive) {
+          ctx.strokeStyle = st.col + '40';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(x + boxW/2, y + 38, 16, -Math.PI/2, -Math.PI/2 + progress * Math.PI * 2);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = isActive ? st.col : C.dim;
+        ctx.font = '700 13px "JetBrains Mono"';
+        ctx.textAlign = 'center';
+        ctx.fillText(st.title, x + boxW/2, y + 42);
+
+        ctx.fillStyle = C.muted;
+        ctx.font = '400 11px "Inter"';
+        ctx.fillText(st.sub, x + boxW/2, y + 74);
+
+        // Status indicator
+        ctx.fillStyle = isActive ? st.col : C.dim;
+        ctx.font = '500 10px "JetBrains Mono"';
+        ctx.fillText(isActive ? '● VERIFYING' : '○ STANDBY', x + boxW/2, y + 125);
+
+        // Connection lines
+        if (i < stages.length - 1) {
+          const nextActive = (t * 2) >= (i + 1);
+          ctx.strokeStyle = nextActive ? C.cyanA(0.25) : C.whiteA(0.05);
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(x + boxW + 6, y + boxH/2);
+          ctx.lineTo(x + boxW + gap - 6, y + boxH/2);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Arrow head
+          if (nextActive) {
+            const ax = x + boxW + gap - 10;
+            const ay = y + boxH/2;
+            ctx.fillStyle = C.cyanA(0.3);
+            ctx.beginPath();
+            ctx.moveTo(ax, ay - 4); ctx.lineTo(ax + 6, ay); ctx.lineTo(ax, ay + 4);
+            ctx.fill();
+          }
+        }
+      });
+
+      // Bottom panel — Cryptographic integrity
+      const lowerY = 340;
+      glassPanel(ctx, 100, lowerY, w - 200, 190, {
+        radius: 16,
+        fill: C.cyanA(0.03),
+        stroke: C.cyanA(0.12),
+        glow: C.cyanA(0.05)
+      });
+
+      ctx.fillStyle = C.white;
+      ctx.font = '600 17px "Inter"';
+      ctx.textAlign = 'center';
+      ctx.fillText('Mathematical Integrity Sealed by Native Web Crypto API', w/2, lowerY + 40);
+
+      // Code block
+      ctx.fillStyle = C.cyanA(0.06);
+      roundRect(ctx, 200, lowerY + 60, w - 400, 40, 8, true, false);
+      ctx.fillStyle = C.cyan;
+      ctx.font = '400 13px "JetBrains Mono"';
+      ctx.fillText('event_hash = SHA256( previous_event_hash + raw_event_payload )', w/2, lowerY + 85);
+
+      // Verification badges
+      const badges = ['Mathematical Chain of Custody', 'Zero Database Tampering', 'Spatial Consensus Scoring'];
+      const badgeStartX = w/2 - (badges.length * 130);
+      badges.forEach((b, i) => {
+        const bx = badgeStartX + i * 260;
+        ctx.fillStyle = C.tealA(0.08);
+        roundRect(ctx, bx, lowerY + 120, 240, 30, 6, true, false);
+        ctx.fillStyle = C.teal;
+        ctx.font = '500 11px "Inter"';
+        ctx.fillText('✓ ' + b, bx + 120, lowerY + 140);
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SCENE 3: GEOINT & 9,360 KM TOR JUMP
+    // ═══════════════════════════════════════════════════════════════
+    function drawScene3(t, w, h) {
+      drawSceneLabel(ctx, w, 'GEOGRAPHIC INTELLIGENCE & ANOMALY HEURISTICS', 'Multi-Vendor Consensus & The 9,360 km Tor Rotation', 48, 82);
+
+      // Map panel
+      const mapW = 580; const mapH = 340; const mapX = 50; const mapY = 115;
+      glassPanel(ctx, mapX, mapY, mapW, mapH, {
+        radius: 16,
+        fill: 'rgba(5, 8, 18, 0.7)',
+        stroke: C.cyanA(0.15),
+        glow: C.cyanA(0.04)
+      });
+
+      // Map grid
+      ctx.strokeStyle = C.cyanA(0.04);
+      ctx.lineWidth = 0.5;
+      for (let mx = mapX + 30; mx < mapX + mapW - 30; mx += 50) {
+        ctx.beginPath(); ctx.moveTo(mx, mapY + 15); ctx.lineTo(mx, mapY + mapH - 15); ctx.stroke();
+      }
+      for (let my = mapY + 30; my < mapY + mapH - 30; my += 50) {
+        ctx.beginPath(); ctx.moveTo(mapX + 15, my); ctx.lineTo(mapX + mapW - 15, my); ctx.stroke();
+      }
+
+      // Draw crude continent outlines with cyan
+      ctx.strokeStyle = C.cyanA(0.1);
+      ctx.lineWidth = 1;
+      // Europe
+      ctx.beginPath();
+      ctx.moveTo(mapX + 220, mapY + 60); ctx.lineTo(mapX + 260, mapY + 70);
+      ctx.lineTo(mapX + 280, mapY + 100); ctx.lineTo(mapX + 250, mapY + 140);
+      ctx.lineTo(mapX + 220, mapY + 130); ctx.lineTo(mapX + 200, mapY + 90);
+      ctx.closePath(); ctx.stroke();
+      // Asia
+      ctx.beginPath();
+      ctx.moveTo(mapX + 300, mapY + 60); ctx.lineTo(mapX + 420, mapY + 80);
+      ctx.lineTo(mapX + 480, mapY + 140); ctx.lineTo(mapX + 460, mapY + 200);
+      ctx.lineTo(mapX + 380, mapY + 220); ctx.lineTo(mapX + 320, mapY + 160);
+      ctx.closePath(); ctx.stroke();
+
+      // Frankfurt node
+      const frankX = mapX + 240; const frankY = mapY + 100;
+      drawTargetingRing(ctx, frankX, frankY, 22, t, C.azureA(0.3));
+      ctx.fillStyle = C.azure;
+      ctx.beginPath(); ctx.arc(frankX, frankY, 6, 0, Math.PI*2); ctx.fill();
+      ctx.shadowColor = C.azure; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.arc(frankX, frankY, 3, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = C.white;
+      ctx.font = '600 10px "JetBrains Mono"';
+      ctx.textAlign = 'center';
+      ctx.fillText('FRANKFURT  09:12 UTC', frankX, frankY - 28);
+
+      // Singapore node
+      const singX = mapX + 450; const singY = mapY + 210;
+      drawTargetingRing(ctx, singX, singY, 22, t, C.tealA(0.25));
+      ctx.fillStyle = C.teal;
+      ctx.beginPath(); ctx.arc(singX, singY, 6, 0, Math.PI*2); ctx.fill();
+      ctx.shadowColor = C.teal; ctx.shadowBlur = 12;
+      ctx.beginPath(); ctx.arc(singX, singY, 3, 0, Math.PI*2); ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = C.white;
+      ctx.font = '600 10px "JetBrains Mono"';
+      ctx.fillText('SINGAPORE  10:04 UTC', singX, singY + 32);
+
+      // Curved route with animated dash
+      ctx.strokeStyle = C.redA(0.5);
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 8]);
+      ctx.lineDashOffset = -t * 15;
+      ctx.beginPath();
+      ctx.moveTo(frankX, frankY);
+      ctx.quadraticCurveTo(frankX + 100, frankY + 20, singX, singY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.lineDashOffset = 0;
+
+      // Distance label
+      ctx.fillStyle = C.redA(0.12);
+      roundRect(ctx, mapX + 270, mapY + 140, 180, 28, 6, true, false);
+      ctx.fillStyle = C.red;
+      ctx.font = '600 10px "JetBrains Mono"';
+      ctx.textAlign = 'center';
+      ctx.fillText('⚠ 9,360 km · 52 min · 10,800 km/h', mapX + 360, mapY + 158);
+
+      // Right: Consensus panel
+      const cardX = 660; const cardY = 115; const cardW = 550;
+      glassPanel(ctx, cardX, cardY, cardW, 340, {
+        radius: 16,
+        fill: C.whiteA(0.02),
+        stroke: C.cyanA(0.1)
+      });
+
+      ctx.fillStyle = C.cyan;
+      ctx.font = '600 11px "JetBrains Mono"';
+      ctx.textAlign = 'center';
+      ctx.fillText('3-VENDOR GEOMETRIC CONSENSUS', cardX + cardW/2, cardY + 30);
+
+      const provs = [
+        { name: 'MaxMind GeoIP2', loc: 'Frankfurt, Germany', stat: 'CONSENSUS' },
+        { name: 'IPinfo.io', loc: 'Frankfurt, Germany', stat: 'CONSENSUS' },
+        { name: 'ip-api.com', loc: 'Frankfurt, Germany', stat: 'CONSENSUS' }
+      ];
+      provs.forEach((p, idx) => {
+        const py = cardY + 50 + idx * 55;
+        ctx.fillStyle = C.whiteA(0.03);
+        ctx.strokeStyle = C.cyanA(0.06);
+        roundRect(ctx, cardX + 20, py, cardW - 40, 45, 10, true, true);
+        ctx.fillStyle = C.white;
+        ctx.font = '500 12px "Inter"';
+        ctx.textAlign = 'left';
+        ctx.fillText(p.name + '  →  ' + p.loc, cardX + 40, py + 28);
+        ctx.fillStyle = C.teal;
+        ctx.font = '600 10px "JetBrains Mono"';
+        ctx.textAlign = 'right';
+        ctx.fillText('✓ ' + p.stat, cardX + cardW - 35, py + 28);
+      });
+
+      // Confidence warning
+      glassPanel(ctx, cardX + 20, cardY + 225, cardW - 40, 90, {
+        radius: 12,
+        fill: C.redA(0.05),
+        stroke: C.redA(0.15),
+        brackets: true,
+        bracketColor: C.redA(0.25),
+        bracketSize: 8
+      });
+      ctx.textAlign = 'center';
+      ctx.fillStyle = C.red;
+      ctx.font = '600 12px "JetBrains Mono"';
+      ctx.fillText('CONFIDENCE: LOW  ·  TOR HARD-CAP ENFORCED', cardX + cardW/2, cardY + 258);
+      ctx.fillStyle = C.muted;
+      ctx.font = '400 11px "Inter"';
+      ctx.fillText('Physical Location: UNKNOWN  ·  Diagnosis: Tor Circuit Rotation', cardX + cardW/2, cardY + 288);
+
+      // Bottom status
+      ctx.fillStyle = C.dim;
+      ctx.font = '400 10px "JetBrains Mono"';
+      ctx.textAlign = 'left';
+      ctx.fillText('GEOINT MODULE v3.2  ·  3 PROVIDERS ONLINE  ·  ANOMALY ENGINE: ACTIVE', 60, h - 30);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SCENE 4: REAL-TIME ATTACK SIMULATION
+    // ═══════════════════════════════════════════════════════════════
+    function drawScene4(t, w, h) {
+      drawSceneLabel(ctx, w, 'INCIDENT RECONSTRUCTION ENGINE', 'Real-Time Attack Simulation Studio', 48, 82);
+
+      // Simulation status bar
+      const barX = 60; const barY = 112; const barW = w - 120;
+      glassPanel(ctx, barX, barY, barW, 52, {
+        radius: 12,
+        fill: C.redA(0.04),
+        stroke: C.redA(0.15),
+        brackets: true,
+        bracketColor: C.redA(0.2)
+      });
+
+      ctx.fillStyle = C.red;
+      ctx.font = '600 12px "JetBrains Mono"';
+      ctx.textAlign = 'left';
+      ctx.fillText('● SIMULATION ACTIVE  ·  60× COMPRESSION', barX + 20, barY + 32);
+
+      // Progress bar
+      const progressRatio = Math.min(1, t / 35);
+      ctx.fillStyle = C.whiteA(0.06);
+      roundRect(ctx, barX + 340, barY + 24, barW - 560, 6, 3, true, false);
+      const progGrad = ctx.createLinearGradient(barX + 340, 0, barX + 340 + (barW - 560) * progressRatio, 0);
+      progGrad.addColorStop(0, C.cyan);
+      progGrad.addColorStop(1, C.azure);
+      ctx.fillStyle = progGrad;
+      roundRect(ctx, barX + 340, barY + 24, (barW - 560) * progressRatio, 6, 3, true, false);
+
+      ctx.fillStyle = C.teal;
+      ctx.textAlign = 'right';
+      ctx.font = '500 11px "JetBrains Mono"';
+      const simMin = Math.floor(t * 2.2);
+      ctx.fillText(`09:${String(12 + Math.floor(simMin)).padStart(2, '0')}:00 UTC`, barX + barW - 20, barY + 32);
+
+      // Col 1: Threat Gauge
+      const c1X = 60; const c1Y = 185; const cW = 340; const cH = 330;
+      glassPanel(ctx, c1X, c1Y, cW, cH, {
+        radius: 16,
+        fill: C.whiteA(0.02),
+        stroke: C.cyanA(0.08)
+      });
+
+      ctx.fillStyle = C.dim;
+      ctx.font = '600 10px "JetBrains Mono"';
+      ctx.textAlign = 'center';
+      ctx.fillText('DYNAMIC THREAT GAUGE', c1X + cW/2, c1Y + 24);
+
+      // Threat percentage with ring
+      const threatPct = Math.min(100, Math.floor(25 + progressRatio * 75));
+      const ringCx = c1X + cW/2;
+      const ringCy = c1Y + 95;
+      const ringR = 42;
+
+      // Background ring
+      ctx.strokeStyle = C.whiteA(0.05);
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(ringCx, ringCy, ringR, 0, Math.PI * 2); ctx.stroke();
+
+      // Progress ring
+      const ringColor = threatPct > 80 ? C.red : threatPct > 50 ? C.teal : C.cyan;
+      ctx.strokeStyle = ringColor;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(ringCx, ringCy, ringR, -Math.PI/2, -Math.PI/2 + (threatPct/100) * Math.PI * 2);
+      ctx.stroke();
+
+      // Glow
+      ctx.shadowColor = ringColor;
+      ctx.shadowBlur = 16;
+      ctx.fillStyle = ringColor;
+      ctx.font = '800 36px "JetBrains Mono"';
+      ctx.fillText(`${threatPct}%`, ringCx, ringCy + 12);
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle = threatPct > 80 ? C.red : C.teal;
+      ctx.font = '600 13px "Inter"';
+      ctx.fillText(threatPct > 80 ? 'CRITICAL BREACH' : 'INITIAL ACCESS', ringCx, ringCy + 50);
+
+      // Kill chain steps
+      const steps = [
+        { label: 'Initial Access (E003)', done: true },
+        { label: 'Process Spawn: powershell.exe (E004)', done: true },
+        { label: threatPct > 80 ? 'Exfiltration: 198.54.117.200 (E010)' : 'Lateral SMB Pivot (E007)', done: threatPct > 80 }
+      ];
+      steps.forEach((s, i) => {
+        const sy = c1Y + 185 + i * 34;
+        ctx.fillStyle = s.done ? C.tealA(0.06) : C.whiteA(0.02);
+        roundRect(ctx, c1X + 15, sy, cW - 30, 28, 6, true, false);
+        ctx.fillStyle = s.done ? C.teal : C.dim;
+        ctx.font = '500 10px "JetBrains Mono"';
+        ctx.textAlign = 'center';
+        ctx.fillText((s.done ? '✓ ' : '○ ') + s.label, c1X + cW/2, sy + 18);
+      });
+
+      // Col 2: Telemetry stream
+      const c2X = 420; const c2W = 400;
+      glassPanel(ctx, c2X, c1Y, c2W, cH, {
+        radius: 16,
+        fill: C.whiteA(0.02),
+        stroke: C.cyanA(0.08)
+      });
+
+      ctx.fillStyle = C.dim;
+      ctx.font = '600 10px "JetBrains Mono"';
+      ctx.textAlign = 'center';
+      ctx.fillText('REAL-TIME TELEMETRY STREAM', c2X + c2W/2, c1Y + 24);
+
+      const events = [
+        { id: 'E001', name: 'Port Scan from Tor Exit', time: '09:12', sev: 'low' },
+        { id: 'E003', name: 'Inbound Connection :4444', time: '09:23', sev: 'med' },
+        { id: 'E004', name: 'PowerShell spawned under explorer', time: '09:31', sev: 'high' },
+        { id: 'E007', name: 'SMB Lateral Pivot to SERVER-02', time: '09:52', sev: 'high' },
+        { id: 'E010', name: 'Bulk Exfiltration to 198.54.117.200', time: '10:22', sev: 'crit' }
+      ];
+      events.forEach((ev, idx) => {
+        const ey = c1Y + 44 + idx * 53;
+        const sevColor = ev.sev === 'crit' ? C.red : ev.sev === 'high' ? C.teal : ev.sev === 'med' ? C.azure : C.cyan;
+        ctx.fillStyle = C.whiteA(0.025);
+        ctx.strokeStyle = sevColor + '15';
+        roundRect(ctx, c2X + 14, ey, c2W - 28, 44, 10, true, true);
+
+        // Severity dot
+        ctx.fillStyle = sevColor;
+        ctx.beginPath(); ctx.arc(c2X + 30, ey + 22, 3, 0, Math.PI * 2); ctx.fill();
+
+        ctx.textAlign = 'left';
+        ctx.fillStyle = sevColor;
+        ctx.font = '600 10px "JetBrains Mono"';
+        ctx.fillText(ev.id, c2X + 42, ey + 20);
+        ctx.fillStyle = C.white;
+        ctx.font = '400 11px "Inter"';
+        ctx.fillText(ev.name, c2X + 82, ey + 20);
+        ctx.fillStyle = C.dim;
+        ctx.font = '400 10px "JetBrains Mono"';
+        ctx.fillText(ev.time + ' UTC', c2X + 42, ey + 36);
+      });
+
+      // Col 3: Alert card
+      const c3X = 840; const c3W = 370;
+      glassPanel(ctx, c3X, c1Y, c3W, cH, {
+        radius: 16,
+        fill: C.whiteA(0.02),
+        stroke: C.cyanA(0.08)
+      });
+
+      ctx.fillStyle = C.dim;
+      ctx.font = '600 10px "JetBrains Mono"';
+      ctx.textAlign = 'center';
+      ctx.fillText('TACTICAL ALERTS', c3X + c3W/2, c1Y + 24);
+
+      // Critical alert card
+      glassPanel(ctx, c3X + 15, c1Y + 42, c3W - 30, 130, {
+        radius: 12,
+        fill: C.redA(0.06),
+        stroke: C.redA(0.2),
+        brackets: true,
+        bracketColor: C.redA(0.3),
+        bracketSize: 8
+      });
+
+      ctx.textAlign = 'left';
+      ctx.fillStyle = C.red;
+      ctx.font = '600 11px "JetBrains Mono"';
+      ctx.fillText('● CRITICAL: E010', c3X + 32, c1Y + 72);
+      ctx.fillStyle = C.white;
+      ctx.font = '500 12px "Inter"';
+      ctx.fillText('High-Volume Data Exfiltration', c3X + 32, c1Y + 96);
+      ctx.fillStyle = C.muted;
+      ctx.font = '400 10px "JetBrains Mono"';
+      ctx.fillText('Sink: 198.54.117.200 (Cloud)', c3X + 32, c1Y + 118);
+      ctx.fillStyle = C.cyan;
+      ctx.font = '500 10px "Inter"';
+      ctx.fillText('Investigate Telemetry →', c3X + 32, c1Y + 148);
+
+      // LUCA tactical note
+      glassPanel(ctx, c3X + 15, c1Y + 190, c3W - 30, 115, {
+        radius: 12,
+        fill: C.cyanA(0.03),
+        stroke: C.cyanA(0.1),
+        brackets: true,
+        bracketColor: C.cyanA(0.15),
+        bracketSize: 8
+      });
+
+      ctx.fillStyle = C.cyan;
+      ctx.font = '600 10px "JetBrains Mono"';
+      ctx.textAlign = 'left';
+      ctx.fillText('◈ LUCA TACTICAL BRIEF', c3X + 32, c1Y + 218);
+      ctx.fillStyle = C.muted;
+      ctx.font = '400 11px "Inter"';
+      const briefLines = [
+        'Kill chain progression confirms',
+        'APT-style lateral movement with',
+        'data staging before exfiltration.'
+      ];
+      briefLines.forEach((line, i) => {
+        ctx.fillText(line, c3X + 32, c1Y + 245 + i * 18);
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SCENE 5: ATTACK GRAPH & CRYPTOGRAPHIC CUSTODY
+    // ═══════════════════════════════════════════════════════════════
+    function drawScene5(t, w, h) {
+      drawSceneLabel(ctx, w, 'DIRECTED FLOW & CRYPTOGRAPHIC CUSTODY', 'Kill Chain Graph & Tamper-Evident SHA-256 Blocks', 48, 82);
+
+      // Left: Attack graph
+      const gX = 50; const gY = 115; const gW = 580; const gH = 400;
+      glassPanel(ctx, gX, gY, gW, gH, {
+        radius: 16,
+        fill: 'rgba(5, 8, 18, 0.6)',
+        stroke: C.cyanA(0.1),
+        glow: C.cyanA(0.03)
+      });
+
+      // Graph nodes with premium styling
+      drawPremiumNode(ctx, gX + 80, gY + 75, '185.220.101.34', 'Tor Exit', C.red, t);
+      drawPremiumNode(ctx, gX + 80, gY + 220, '45.33.32.156', 'Linode Cloud', C.azure, t);
+      drawPremiumNode(ctx, gX + 280, gY + 150, 'WORKSTATION-01', 'Compromised', C.cyan, t);
+      drawPremiumNode(ctx, gX + 470, gY + 150, 'SERVER-02', 'SMB Target', C.teal, t);
+      drawPremiumNode(ctx, gX + 470, gY + 290, 'DATABASE-01', 'SQL Exfil', C.teal, t);
+
+      // Animated edges with energy pulses
+      drawPremiumEdge(ctx, gX + 140, gY + 75, gX + 225, gY + 140, C.red, 'E001 Scan', t);
+      drawPremiumEdge(ctx, gX + 140, gY + 220, gX + 225, gY + 160, C.azure, 'E003 Access', t);
+      drawPremiumEdge(ctx, gX + 335, gY + 150, gX + 415, gY + 150, C.teal, 'E007 Pivot', t);
+      drawPremiumEdge(ctx, gX + 470, gY + 185, gX + 470, gY + 255, C.teal, 'E009 Query', t);
+
+      // Right: Cryptographic custody
+      const cX = 660; const cY = 115; const cW = 555; const cH = 400;
+      glassPanel(ctx, cX, cY, cW, cH, {
+        radius: 16,
+        fill: 'rgba(5, 8, 18, 0.6)',
+        stroke: C.tealA(0.12),
+        glow: C.tealA(0.03)
+      });
+
+      ctx.fillStyle = C.teal;
+      ctx.font = '600 11px "JetBrains Mono"';
+      ctx.textAlign = 'center';
+      ctx.fillText('TAMPER-EVIDENT SHA-256 AUDIT TRAIL', cX + cW/2, cY + 30);
+
+      const chainBlocks = [
+        { id: 'E001', hash: 'e3b0c44298fc1c149afbf4c8996fb924', prev: '000000000000', label: 'Port Scan' },
+        { id: 'E002', hash: '8f434346648f6b96df89dda901c5176b', prev: 'e3b0c44298fc', label: 'DNS Lookup' },
+        { id: 'E003', hash: '6b86b273ff34fce19d6b804eff5a3f57', prev: '8f434346648f', label: 'Connection' }
+      ];
+
+      chainBlocks.forEach((b, idx) => {
+        const by = cY + 50 + idx * 105;
+
+        // Crystal block effect
+        glassPanel(ctx, cX + 25, by, cW - 50, 85, {
+          radius: 12,
+          fill: C.tealA(0.03),
+          stroke: C.tealA(0.12),
+          brackets: true,
+          bracketColor: C.tealA(0.2),
+          bracketSize: 8
+        });
+
+        // Block header
+        ctx.textAlign = 'left';
+        ctx.fillStyle = C.white;
+        ctx.font = '600 12px "JetBrains Mono"';
+        ctx.fillText(`BLOCK #${idx+1}  ·  ${b.id}  ·  ${b.label}`, cX + 42, by + 24);
+
+        // Seal status
+        ctx.fillStyle = C.teal;
+        ctx.textAlign = 'right';
+        ctx.font = '600 10px "JetBrains Mono"';
+        ctx.fillText('✓ SHA-256 SEALED', cX + cW - 42, by + 24);
+
+        // Hash values with mono styling
+        ctx.textAlign = 'left';
+        ctx.fillStyle = C.muted;
+        ctx.font = '300 10px "JetBrains Mono"';
+        ctx.fillText(`HASH  ${b.hash}…`, cX + 42, by + 48);
+        ctx.fillText(`PREV  ${b.prev}…`, cX + 42, by + 65);
+
+        // Chain connector
+        if (idx < chainBlocks.length - 1) {
+          ctx.strokeStyle = C.tealA(0.15);
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 5]);
+          ctx.beginPath();
+          ctx.moveTo(cX + cW/2, by + 85);
+          ctx.lineTo(cX + cW/2, by + 105);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Animated pulse dot on chain
+          const pulsePos = ((t * 0.5 + idx * 0.3) % 1);
+          const pulseY = by + 85 + pulsePos * 20;
+          ctx.fillStyle = C.teal;
+          ctx.shadowColor = C.teal;
+          ctx.shadowBlur = 8;
+          ctx.beginPath(); ctx.arc(cX + cW/2, pulseY, 2, 0, Math.PI * 2); ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      });
+
+      // Verification status
+      ctx.fillStyle = C.tealA(0.06);
+      roundRect(ctx, cX + 25, cY + 370, cW - 50, 24, 6, true, false);
+      ctx.fillStyle = C.teal;
+      ctx.font = '500 10px "JetBrains Mono"';
+      ctx.textAlign = 'center';
+      ctx.fillText('CHAIN INTEGRITY: VERIFIED  ·  0 TAMPER EVENTS  ·  3/3 BLOCKS SEALED', cX + cW/2, cY + 386);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // SCENE 6: AUTONOMOUS FORENSIC INTELLIGENCE
+    // ═══════════════════════════════════════════════════════════════
+    function drawScene6(t, w, h) {
+      ctx.textAlign = 'center';
+
+      // LUCA sphere — central glowing orb
+      const avX = w/2; const avY = 155;
+
+      // Multi-layer glow
+      const glow1 = ctx.createRadialGradient(avX, avY, 5, avX, avY, 180);
+      glow1.addColorStop(0, C.cyanA(0.2));
+      glow1.addColorStop(0.3, C.azureA(0.08));
+      glow1.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow1;
+      ctx.fillRect(0, 0, w, h);
+
+      // Outer targeting rings (rotating)
+      drawTargetingRing(ctx, avX, avY, 70, t, C.cyanA(0.15));
+      drawTargetingRing(ctx, avX, avY, 90, -t * 0.7, C.azureA(0.08));
+
+      // Core sphere
+      const sphereGrad = ctx.createRadialGradient(avX - 8, avY - 8, 2, avX, avY, 35);
+      sphereGrad.addColorStop(0, C.cyanA(0.6));
+      sphereGrad.addColorStop(0.5, C.azureA(0.3));
+      sphereGrad.addColorStop(1, C.cyanA(0.05));
+      ctx.fillStyle = sphereGrad;
+      ctx.beginPath(); ctx.arc(avX, avY, 35, 0, Math.PI*2); ctx.fill();
+
+      // Sphere glow
+      ctx.shadowColor = C.cyan;
+      ctx.shadowBlur = 30;
+      ctx.strokeStyle = C.cyanA(0.4);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(avX, avY, 35, 0, Math.PI*2); ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Reactive waveform inside sphere
+      ctx.strokeStyle = C.whiteA(0.5);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = -20; i <= 20; i++) {
+        const px = avX + i;
+        const py = avY + Math.sin(i * 0.3 + t * 4) * 6 * Math.cos(i * 0.08);
+        if (i === -20) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      // Title
+      ctx.fillStyle = C.white;
+      ctx.font = '700 32px "Inter"';
+      ctx.fillText('LUCA : Autonomous Forensic Intelligence', w/2, 240);
+
+      // Analysis categories floating
+      const cats = ['SPATIAL', 'TEMPORAL', 'BEHAVIORAL', 'CRYPTOGRAPHIC'];
+      cats.forEach((cat, i) => {
+        const cx = w/2 - 280 + i * 185;
+        const cy = 268;
+        ctx.fillStyle = C.cyanA(0.06);
+        ctx.strokeStyle = C.cyanA(0.1);
+        roundRect(ctx, cx, cy, 150, 26, 8, true, true);
+        ctx.fillStyle = C.cyan;
+        ctx.font = '500 9px "JetBrains Mono"';
+        ctx.fillText(cat, cx + 75, cy + 17);
+      });
+
+      // Forensic Briefing quote panel
+      const qX = w/2 - 400; const qY = 318; const qW = 800;
+      glassPanel(ctx, qX, qY, qW, 85, {
+        radius: 14,
+        fill: C.cyanA(0.03),
+        stroke: C.cyanA(0.12),
+        glow: C.cyanA(0.04)
+      });
+
+      ctx.fillStyle = C.cyanA(0.5);
+      ctx.font = '500 10px "JetBrains Mono"';
+      ctx.fillText('FORENSIC BRIEFING  ·  NATURAL LANGUAGE  ·  SPEECH-TO-TEXT', w/2, qY + 26);
+
+      ctx.fillStyle = C.success;
+      ctx.font = '400 14px "Inter"';
+      ctx.fillText('"Physical operator location is UNKNOWN. All three IPs represent Tor and cloud hosting."', w/2, qY + 58);
+
+      // Final CTA panel
+      const finY = 430;
+      glassPanel(ctx, w/2 - 430, finY, 860, 145, {
+        radius: 18,
+        fill: C.whiteA(0.025),
+        stroke: C.cyanA(0.1),
+        glow: C.cyanA(0.03)
+      });
+
+      ctx.fillStyle = C.cyan;
+      ctx.shadowColor = C.cyan;
+      ctx.shadowBlur = 20;
+      ctx.font = '700 22px "Inter"';
+      ctx.fillText('LUCIX : The Future of Incident Attribution', w/2, finY + 40);
+      ctx.shadowBlur = 0;
+
+      ctx.fillStyle = C.muted;
+      ctx.font = '400 12px "Inter"';
+      ctx.fillText('100% Client-Side  ·  Zero API Dependencies  ·  Multi-Source GEOINT  ·  SHA-256 Custody', w/2, finY + 72);
+
+      // Bottom badges
+      const capabilities = ['FORENSIC ENGINE', 'VOICE I/O', 'HASH CHAIN', 'GEO CONSENSUS', 'ATTACK SIM'];
+      capabilities.forEach((cap, i) => {
+        const bx = w/2 - 320 + i * 130;
+        const by = finY + 95;
+        ctx.fillStyle = C.tealA(0.06);
+        ctx.strokeStyle = C.tealA(0.1);
+        roundRect(ctx, bx, by, 115, 24, 6, true, true);
+        ctx.fillStyle = C.teal;
+        ctx.font = '500 9px "JetBrains Mono"';
+        ctx.textAlign = 'center';
+        ctx.fillText(cap, bx + 57, by + 16);
+      });
+
+      // Copyright
+      ctx.fillStyle = C.dim;
+      ctx.font = '400 10px "Inter"';
+      ctx.fillText('Transforming Cyber Attribution from Speculation into Mathematical Certainty', w/2, h - 25);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // PREMIUM DRAWING HELPERS
+    // ═══════════════════════════════════════════════════════════════
+    function roundRect(c, x, y, width, height, radius, fill, stroke) {
+      c.beginPath();
+      c.moveTo(x + radius, y);
+      c.lineTo(x + width - radius, y);
+      c.quadraticCurveTo(x + width, y, x + width, y + radius);
+      c.lineTo(x + width, y + height - radius);
+      c.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      c.lineTo(x + radius, y + height);
+      c.quadraticCurveTo(x, y + height, x, y + height - radius);
+      c.lineTo(x, y + radius);
+      c.quadraticCurveTo(x, y, x + radius, y);
+      c.closePath();
+      if (fill) c.fill();
+      if (stroke) c.stroke();
+    }
+
+    function drawFlowBox(c, x, y, bw, bh, title, val, col) {
+      glassPanel(c, x, y, bw, bh, {
+        radius: 12,
+        fill: C.whiteA(0.03),
+        stroke: col + '30',
+        brackets: true,
+        bracketColor: col + '25',
+        bracketSize: 8
+      });
+      c.textAlign = 'center';
+      c.fillStyle = C.muted;
+      c.font = '500 9px "JetBrains Mono"';
+      c.fillText(title, x + bw/2, y + 30);
+      c.fillStyle = col;
+      c.font = '600 12px "JetBrains Mono"';
+      c.fillText(val, x + bw/2, y + 55);
+    }
+
+    function drawFlowArrow(c, x1, y1, x2, y2, label, col) {
+      c.strokeStyle = col + '40';
+      c.lineWidth = 1;
+      c.setLineDash([4, 4]);
+      c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+      c.setLineDash([]);
+      // Arrow head
+      c.fillStyle = col + '60';
+      c.beginPath();
+      c.moveTo(x2 - 6, y1 - 4); c.lineTo(x2, y1); c.lineTo(x2 - 6, y1 + 4);
+      c.fill();
+      c.textAlign = 'center';
+      c.fillStyle = col;
+      c.font = '500 8px "JetBrains Mono"';
+      c.fillText(label, (x1+x2)/2, y1 - 12);
+    }
+
+    function drawPremiumNode(c, x, y, label, sub, col, time) {
+      // Node glow
+      c.save();
+      c.shadowColor = col;
+      c.shadowBlur = 10;
+      c.fillStyle = C.deep;
+      c.strokeStyle = col + '50';
+      c.lineWidth = 1;
+      roundRect(c, x - 65, y - 22, 130, 44, 10, true, true);
+      c.restore();
+
+      c.textAlign = 'center';
+      c.fillStyle = C.white;
+      c.font = '600 9px "JetBrains Mono"';
+      c.fillText(label, x, y - 3);
+      c.fillStyle = C.muted;
+      c.font = '400 8px "Inter"';
+      c.fillText(sub, x, y + 12);
+    }
+
+    function drawPremiumEdge(c, x1, y1, x2, y2, col, label, time) {
+      c.strokeStyle = col + '35';
+      c.lineWidth = 1.5;
+      c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke();
+
+      // Animated energy pulse along edge
+      const pulseT = (time * 0.8) % 1;
+      const px = x1 + (x2 - x1) * pulseT;
+      const py = y1 + (y2 - y1) * pulseT;
+      c.fillStyle = col;
+      c.shadowColor = col;
+      c.shadowBlur = 8;
+      c.beginPath(); c.arc(px, py, 2.5, 0, Math.PI * 2); c.fill();
+      c.shadowBlur = 0;
+
+      // Arrow head
+      const angle = Math.atan2(y2 - y1, x2 - x1);
+      c.save();
+      c.translate(x2, y2);
+      c.rotate(angle);
+      c.fillStyle = col + '60';
+      c.beginPath();
+      c.moveTo(0, 0); c.lineTo(-8, -4); c.lineTo(-8, 4);
+      c.closePath(); c.fill();
+      c.restore();
+
+      c.textAlign = 'center';
+      c.fillStyle = col;
+      c.font = '500 8px "JetBrains Mono"';
+      c.fillText(label, (x1+x2)/2, (y1+y2)/2 - 10);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // HUD, SUBTITLES & CONTROLS
+    // ═══════════════════════════════════════════════════════════════
+    function updateSubtitlesAndHUD(time) {
+      const m = Math.floor(time / 60);
+      const s = Math.floor(time % 60);
+      document.getElementById('timecodeDisplay').textContent =
+        `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')} / 03:00`;
+
+      const pct = (time / TOTAL_DURATION) * 100;
+      document.getElementById('progressBar').style.width = `${pct}%`;
+
+      const seg = SCRIPT.find(sc => time >= sc.start && time < sc.end) || SCRIPT[SCRIPT.length - 1];
+      if (seg) {
+        document.getElementById('sceneNameDisplay').textContent = seg.scene;
+        document.getElementById('subSpeaker').textContent = seg.speaker;
+        document.getElementById('subText').textContent = seg.text;
+      }
+
+      const pills = document.querySelectorAll('.scene-pill');
+      const sceneBreaks = [0, 25, 55, 90, 125, 155];
+      let curSceneIdx = 0;
+      for (let i = sceneBreaks.length - 1; i >= 0; i--) {
+        if (time >= sceneBreaks[i]) { curSceneIdx = i; break; }
+      }
+      pills.forEach((p, idx) => p.classList.toggle('active', idx === curSceneIdx));
+
+      triggerVoiceForTime(time);
+    }
+
+    function loop(timestamp) {
+      if (!lastTimestamp) lastTimestamp = timestamp;
+      const delta = (timestamp - lastTimestamp) / 1000;
+      lastTimestamp = timestamp;
+
+      if (isPlaying) {
+        currentTime += delta;
+        if (currentTime >= TOTAL_DURATION) {
+          currentTime = TOTAL_DURATION;
+          pauseVideo();
+        }
+      }
+
+      renderFrame(currentTime);
+
+      if (isPlaying || currentTime < TOTAL_DURATION) {
+        animFrameId = requestAnimationFrame(loop);
+      }
+    }
+
+    function togglePlay() {
+      if (isPlaying) { pauseVideo(); } else { playVideo(); }
+    }
+
+    function playVideo() {
+      if (currentTime >= TOTAL_DURATION) currentTime = 0;
+      isPlaying = true;
+      lastTimestamp = 0;
+      document.getElementById('playBtn').textContent = '⏸ Pause Briefing';
+      cancelAnimationFrame(animFrameId);
+      animFrameId = requestAnimationFrame(loop);
+      playBeep(600, 0.08);
+    }
+
+    function pauseVideo() {
+      isPlaying = false;
+      document.getElementById('playBtn').textContent = '▶ Play Forensic Briefing';
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      currentSpeechSegment = null;
+    }
+
+    function restartVideo() {
+      pauseVideo();
+      currentTime = 0;
+      currentSpeechSegment = null;
+      renderFrame(0);
+      playVideo();
+    }
+
+    function jumpToTime(sec) {
+      currentTime = sec;
+      currentSpeechSegment = null;
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      renderFrame(sec);
+      if (!isPlaying) playVideo();
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      document.getElementById('muteBtn').textContent = isMuted ? '◎ Voice: OFF' : '◉ Voice: ON';
+      if (isMuted && window.speechSynthesis) window.speechSynthesis.cancel();
+    }
+
+    function toggleRecording() {
+      if (isRecording) { stopRecording(); } else { startRecording(); }
+    }
+
+    function startRecording() {
+      try {
+        const stream = canvas.captureStream(30);
+        recordedChunks = [];
+        const mimeTypes = ['video/webm;codecs=vp9', 'video/webm', 'video/mp4'];
+        let selectedMime = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
+        mediaRecorder = new MediaRecorder(stream, selectedMime ? { mimeType: selectedMime } : {});
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data.size > 0) recordedChunks.push(e.data);
+        };
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: selectedMime || 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `LUCIX_Forensic_Briefing.${selectedMime.includes('mp4') ? 'mp4' : 'webm'}`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        };
+        mediaRecorder.start();
+        isRecording = true;
+        const recBtn = document.getElementById('recordBtn');
+        recBtn.textContent = '⏹ Stop & Save';
+        recBtn.classList.add('recording');
+        restartVideo();
+      } catch (err) {
+        alert('Recording error: ' + err.message);
+      }
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && isRecording) {
+        mediaRecorder.stop();
+        isRecording = false;
+        const recBtn = document.getElementById('recordBtn');
+        recBtn.textContent = '● Record & Save';
+        recBtn.classList.remove('recording');
+      }
+    }
+
+    document.getElementById('progressBarContainer').addEventListener('click', (e) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const clickRatio = (e.clientX - rect.left) / rect.width;
+      jumpToTime(clickRatio * TOTAL_DURATION);
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderFrame(0);
+    });
+  </script>
+</body>
+</html>

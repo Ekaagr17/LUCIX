@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LUCIX — GEOINT</title>
+
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- LUCIX Design System v3 -->
+  <link rel="stylesheet" href="css/lucix.css"/>
+
+  <style>
+    :root { --luca-panel-h: 65vh; }
+    .sb-nav-btn { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; }
+  </style>
+</head>
+<body>
+
+<!-- Global Toast Notifications Container -->
+<div id="lucix-toast-container"></div>
+
+<!-- ═══ SIDEBAR ════════════════════════════════════════════════ -->
+<nav class="lucix-sidebar">
+  <div class="sb-logo" title="LUCIX">LX</div>
+
+  <button class="sb-nav-btn" data-view="simulation" onclick="LUCIX.navigate('simulation')" style="color:#C41E3A">
+    SIM<span class="sb-tooltip">Attack Simulation</span>
+  </button>
+  <button class="sb-nav-btn" data-view="video" onclick="window.open('video_presentation.html', '_blank')" style="color:#C5A55A">
+    VID<span class="sb-tooltip">Video Showcase</span>
+  </button>
+
+  <div class="sb-divider"></div>
+
+  <button class="sb-nav-btn" data-view="timeline" onclick="LUCIX.navigate('timeline')">
+    TL<span class="sb-tooltip">Timeline</span>
+  </button>
+  <button class="sb-nav-btn" data-view="attack_graph" onclick="LUCIX.navigate('attack_graph')">
+    AG<span class="sb-tooltip">Attack Graph</span>
+  </button>
+  <button class="sb-nav-btn" data-view="evidence" onclick="LUCIX.navigate('evidence')">
+    EV<span class="sb-tooltip">Evidence</span>
+  </button>
+
+  <div class="sb-divider"></div>
+
+  <button class="sb-nav-btn" data-view="geoint" onclick="LUCIX.navigate('geoint')">
+    GEO<span class="sb-tooltip">Geographic Attribution</span>
+  </button>
+
+  <div class="sb-divider"></div>
+
+  <button class="sb-nav-btn" data-view="luca" onclick="LucaView.toggleExpand()">
+    LC<span class="sb-tooltip">LUCA</span>
+  </button>
+
+  <div class="sb-divider" style="margin-top:auto"></div>
+
+  <!-- IP quick dots -->
+  <div class="sb-bottom" id="sb-ip-dots" style="gap:10px;margin-bottom:6px"></div>
+</nav>
+
+<!-- ═══ MAIN CONTENT ════════════════════════════════════════════ -->
+<div class="lucix-content">
+
+  <!-- Hero bar -->
+  <div class="lucix-hero">
+    <div class="hero-logo-mark">LUCIX</div>
+    <div class="hero-sep"></div>
+    <div class="hero-incident">
+      <div class="hero-incident-id">INC-2026-0918-001</div>
+      <div class="hero-incident-title">Security Incident — Active Investigation</div>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat-pill" style="border-color:rgba(197,165,90,.3);color:var(--gold);font-family:var(--font-mono);font-size:10.5px;" title="NVIDIA NIM: Model nvidia/nemotron-3.5-bolt-e4b Active"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--gold);margin-right:5px;"></span>NVIDIA NIM</div>
+      <div class="hero-stat-pill" style="border-color:rgba(26,58,107,.5);color:#8899AA;font-family:var(--font-mono);font-size:10.5px;" title="Geoapify Dark Matter & Geoint Intelligence Active"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#3A86FF;margin-right:5px;"></span>GEOAPIFY</div>
+      <div class="hero-stat-pill" style="cursor:pointer" onclick="LUCIX.navigate('simulation')"><span id="hero-events">11 Events</span></div>
+      <div class="hero-stat-pill">3 Source IPs</div>
+      <div class="hero-stat-pill" id="hero-chain-pill">Verifying…</div>
+      <div class="hero-live" id="hero-live-indicator" style="cursor:pointer" onclick="LUCIX.navigate('simulation')"><div class="hero-live-dot"></div>LIVE</div>
+    </div>
+  </div>
+
+  <!-- View container -->
+  <div id="main-content">
+    <div class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <span>Initializing LUCIX — computing SHA-256 evidence chain…</span>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ LUCA BAR (fixed bottom) ════════════════════════════════ -->
+<div class="luca-bar" id="luca-bar">
+  <!-- Populated by LucaView.initBar() -->
+</div>
+
+<!-- ═══ SCRIPTS ════════════════════════════════════════════════ -->
+<script src="js/data/demo_data.js"></script>
+<script src="js/core/evidence.js"></script>
+<script src="js/core/network_class.js"></script>
+<script src="js/core/geo_provider.js"></script>
+<script src="js/core/spoofing.js"></script>
+<script src="js/core/simulation.js"></script>
+<script src="js/views/timeline.js"></script>
+<script src="js/views/attack_graph.js"></script>
+<script src="js/views/evidence_view.js"></script>
+<script src="js/views/geoint.js"></script>
+<script src="js/views/luca.js"></script>
+<script src="js/views/sim_view.js"></script>
+
+<script>
+'use strict';
+
+window.LUCIX = {
+  state: { events: [], currentView: null },
+
+  async init() {
+    // 1. Clone events
+    LUCIX.state.events = JSON.parse(JSON.stringify(window.LUCIX_DATA.DEMO_EVENTS));
+
+    // 2. Build + verify SHA-256 chain
+    await EvidenceIntegrity.buildIntegrityChain(LUCIX.state.events);
+    const results = await EvidenceIntegrity.verifyChain(LUCIX.state.events);
+    const verified = results.filter(r => r.status === 'VERIFIED').length;
+    const total    = LUCIX.state.events.length;
+
+    // 3. Update hero pill
+    const pill = document.getElementById('hero-chain-pill');
+    if (pill) pill.innerHTML = `${verified}/${total} Verified`;
+
+    // 4. IP quick-dots in sidebar
+    LUCIX.buildIPDots();
+
+    // 5. Init LUCA bar
+    LucaView.initBar();
+
+    // 6. Hook simulation engine to hero bar
+    SimulationEngine.subscribe((type, data) => {
+      const heroEv = document.getElementById('hero-events');
+      const liveInd = document.getElementById('hero-live-indicator');
+      const st = SimulationEngine.getStatus();
+      if (heroEv) {
+        if (st === 'RUNNING') {
+          heroEv.textContent = `${SimulationEngine.getCurrentIndex() + 1}/11 Events (Sim Active)`;
+        } else if (st === 'COMPLETED') {
+          heroEv.textContent = `11/11 Events (Sim Finished)`;
+        } else {
+          heroEv.textContent = `11 Events`;
+        }
+      }
+      if (liveInd) {
+        liveInd.style.color = st === 'RUNNING' ? '#C41E3A' : 'rgba(255,255,255,.8)';
+      }
+    });
+
+    // 7. Default view: timeline
+    LUCIX.navigate('timeline');
+  },
+
+  navigate(view, params) {
+    params = params || {};
+    LUCIX.state.currentView = view;
+
+    // Sidebar highlight
+    document.querySelectorAll('.sb-nav-btn[data-view]').forEach(el => {
+      el.classList.toggle('active', el.dataset.view === view);
+    });
+
+    const container = document.getElementById('main-content');
+    switch (view) {
+      case 'simulation':   SimulationView.render(container);              break;
+      case 'timeline':     TimelineView.render(container);                break;
+      case 'attack_graph': AttackGraphView.render(container);             break;
+      case 'evidence':     EvidenceView.render(container, params);        break;
+      case 'geoint':       GeoIntView.render(container, params);          break;
+      default:             container.innerHTML = '<div class="empty-state">Unknown view.</div>';
+    }
+  },
+
+  buildIPDots() {
+    const wrap = document.getElementById('sb-ip-dots');
+    if (!wrap) return;
+    const ips = Object.keys(window.LUCIX_DATA.IP_GEO_DATA);
+    const colors = { TOR_EXIT:'#1A3A6B', VPN:'#C5A55A', CLOUD_HOSTING:'#C41E3A', UNKNOWN:'#4A5568' };
+    wrap.innerHTML = ips.map(ip => {
+      const a   = GeoProvider.analyzeIP(ip);
+      const col = colors[a.classification.type] || '#4A5568';
+      return `<div class="sb-ip-dot" style="background:${col};box-shadow:0 0 6px ${col}80"
+        title="${ip} — ${a.displayCity}"
+        onclick="LUCIX.navigate('geoint',{ip:'${ip}'})"></div>`;
+    }).join('');
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+  LUCIX.init().catch(err => {
+    document.getElementById('main-content').innerHTML =
+      `<div class="empty-state">Init error: ${err.message}</div>`;
+    console.error(err);
+  });
+});
+</script>
+</body>
+</html>
